@@ -6,7 +6,7 @@ from flask import *
 import sys
 import os
 
-app = Flask(__name__,template_folder='C:\\Users\\nishant.narula\\PycharmProjects\\Yatra\\venv\\templates')
+app = Flask(__name__)
 
 @app.route('/getResponse/where', methods=['GET'])
 def reque():
