@@ -1,0 +1,50 @@
+import requests
+import pandas as pd
+import datetime
+import pyodbc
+from flask import *
+import sys
+import os
+
+app = Flask(__name__,template_folder='C:\\Users\\nishant.narula\\PycharmProjects\\Yatra\\venv\\templates')
+
+@app.route('/getResponse/where', methods=['GET'])
+def reque():
+
+    if ('promo') and ('sdate') and ('edate')  in request.args:
+        _promo = request.args['promo']
+        _sdate = request.args['sdate']
+        _edate = request.args['edate']
+    print(_promo,_sdate,_edate)
+    print("\nEstablishing Connection")
+    conn = pyodbc.connect(
+        'DRIVER={ODBC Driver 13 for SQL Server};SERVER=172.16.3.138;DATABASE=BookingDB;Trusted_Connection=yes')
+    print("\nConnection Established! Time: ",datetime.datetime.now())
+    cur = conn.cursor()
+    cur.execute("select CAST(bm.date_of_booking AS DATE),count(bm.booking_ref),sum(bm.total_gross_amount+bm.total_tax),sum(bc.gross_charge) FROM booking_master bm inner  JOIN payment p ON p.booking_Ref=bm.booking_Ref INNER JOIN payment_allocation pa ON pa.pay_allocation_id =p.pay_allocation_id  left JOIN credit_card_details ccd on ccd.pay_allocation_id=pa.pay_allocation_id left join booking_charges bc on bc.booking_ref=bm.booking_ref and bc.charge_type in('Promotional Discount','Discount') inner join client_master cm on cm.client_id=bm.client_id left join agent_details ad on ad.agent_id=bm.agent_id WHERE pa.allocation_type in('RECEIPT') and pa.payment_Recieved='YES' and convert(varchar(12),bm.date_of_booking,111)>=? and convert(varchar(12),bm.date_of_booking,111)<=? and bc.charge_description like (?) group by CAST(bm.date_of_booking AS DATE)",(_sdate,_edate,_promo))
+    data = cur.fetchall()
+
+    #return render_template('trans.html',_promo=_promo,_sdate=_sdate,_edate=_edate,data=data)
+
+    s = "<center><p><b><center>Promo Redemptions Summary Report</center><table border=2 cellpadding=10 cellspacing=10 table solid red'<th>Output</th><th>Date</th><th>Bookings</th><th>TTV</th><th>Discounting</th>"
+    print(_promo,_sdate,_edate)
+    for row in data:
+         s = s + "<tr>"
+         for x in row:
+             s = s + "<td>" + str(x) + "</td>"
+         s = s + "</tr>"
+    return "<html><body>"+ s +"</body></html>"
+
+
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5002)
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+
+
+
+
+
+request()
